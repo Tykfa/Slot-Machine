@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import messagebox
 import sqlite3
+import game_window as gw
+
 
 root = Tk()
 root.configure(bg="peach puff")
@@ -34,7 +36,10 @@ def login():
     user = c.fetchone()
     if user:
         messagebox.showinfo("Login Successful", "Welcome, " + username + "!")
-        # here open main menu that stores loged in user info
+        root.destroy()
+        game = gw.Game()
+        game.run()  # here open main menu that stores loged in user info
+
     else:
         messagebox.showerror("Login Error", "Invalid username or password")
 
@@ -47,7 +52,10 @@ def register():
         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
         users.commit()
         messagebox.showinfo("Registration Successful", "Welcome, " + username + "!")
-        # here open main menu that stores loged in user info
+        root.destroy()
+        game = gw.Game()
+        game.run()  # here open main menu that stores loged in user info
+
     except sqlite3.IntegrityError:
         messagebox.showerror("Registration Error", "Username already taken")
 
