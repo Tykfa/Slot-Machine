@@ -1,12 +1,18 @@
 from random import choice
 from tkinter import *
 import game_settings as gs
+import sqlite3
 
 
 class Game:
-    def __init__(self):
-        self.player_username = "Test_Username"
-        self.player_credits = 100
+    def __init__(self, stored_username):
+        users = sqlite3.connect("users.db")
+        c = users.cursor()
+        c.execute("SELECT credits FROM users WHERE username=?", (stored_username,))
+        user = c.fetchone()
+
+        self.player_username = stored_username
+        self.player_credits = user[0]
 
         self.root = Tk()
         self.root.configure(bg="peach puff")
@@ -97,7 +103,7 @@ class Game:
         self.exit_to_menu_button = Button(
             self.exit_buttons_frame,
             font="Helvetica 8 bold",
-            command=exit,
+            command=self.exit_to_menu,
             text="Exit to main menu",
             width=gs.MACHINE_WIDTH - 18,
             height=gs.DEFAULT_WIDGET_HEIGHT - 1,
@@ -157,6 +163,11 @@ class Game:
             self.player_label.config(text=f"See you soon, \n {self.player_username}!")
         else:
             raise TypeError("002")
+
+    def exit_to_menu(self):
+        from menu_window import MainMenu
+        self.root.destroy()
+        MainMenu(self.player_username).run()
 
     def run(self):
         self.root.mainloop()
