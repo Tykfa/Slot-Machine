@@ -6,10 +6,10 @@ import sqlite3
 
 class Game:
     def __init__(self, stored_username):
-        users = sqlite3.connect("users.db")
-        c = users.cursor()
-        c.execute("SELECT credits FROM users WHERE username=?", (stored_username,))
-        user = c.fetchone()
+        self.users = sqlite3.connect("users.db")
+        self.c = self.users.cursor()
+        self.c.execute("SELECT credits FROM users WHERE username=?", (stored_username,))
+        user = self.c.fetchone()
 
         self.player_username = stored_username
         self.player_credits = user[0]
@@ -27,7 +27,7 @@ class Game:
 
         self.price_label = Label(
             self.interface_frame,
-            text="Spin prize: 5$",
+            text=f"Spin prize: {gs.GAME_PRICE}$",
             font="Helvetica 20 bold",
             width=gs.MACHINE_WIDTH - 20,
             height=gs.DEFAULT_WIDGET_HEIGHT - 1,
@@ -94,7 +94,7 @@ class Game:
         self.exit_game_button = Button(
             self.exit_buttons_frame,
             font="Helvetica 8 bold",
-            command=exit,
+            command=self.exit_game,
             text="Exit game",
             width=gs.MACHINE_WIDTH - 18,
             height=gs.DEFAULT_WIDGET_HEIGHT - 1,
@@ -135,15 +135,15 @@ class Game:
         return all(x == payline_list[0] for x in payline_list)
 
     def spin_it(self):
-        if self.player_credits >= 5:
-            self.player_credits -= 5
+        if self.player_credits >= gs.GAME_PRICE:
+            self.player_credits -= gs.GAME_PRICE
             self.randomize_reels()
             self.reel_one.config(text=f"{gs.payline[-3]}")
             self.reel_two.config(text=f"{gs.payline[-2]}")
             self.reel_three.config(text=f"{gs.payline[-1]}")
 
             if self.all_same(gs.payline):
-                self.player_credits += 15
+                self.player_credits += gs.WIN_AMOUNT
                 self.result_label.config(text=f" You have won! \n Congratulations", fg="gold")
                 self.player_credits_label.config(text=f"Your credits:\n {self.player_credits} $")
                 return True
@@ -153,7 +153,7 @@ class Game:
                 return False
             else:
                 raise TypeError("001")
-        elif self.player_credits < 5:
+        elif self.player_credits < gs.GAME_PRICE:
             self.lever.config(text="Insert more credits", relief="groove", bg=gs.MAIN_COLOR)
             self.lever["state"] = DISABLED
             self.reel_one.config(text=f"")
@@ -164,10 +164,25 @@ class Game:
         else:
             raise TypeError("002")
 
+    def exit_game(self):
+        self.c.execute("UPDATE users SET credits =? WHERE username=?", (self.player_credits, self.player_username))
+        self.users.commit()
+        self.users.close()
+        exit()
+
     def exit_to_menu(self):
         from menu_window import MainMenu
         self.root.destroy()
+        self.c.execute("UPDATE users SET credits =? WHERE username=?", (self.player_credits, self.player_username))
+        self.users.commit()
+        self.users.close()
         MainMenu(self.player_username).run()
 
     def run(self):
         self.root.mainloop()
+        try:
+            self.c.execute("UPDATE users SET credits =? WHERE username=?", (self.player_credits, self.player_username))
+            self.users.commit()
+            self.users.close()
+        except sqlite3.ProgrammingError:
+            pass
